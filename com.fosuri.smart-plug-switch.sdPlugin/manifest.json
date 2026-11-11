@@ -1,0 +1,82 @@
+{
+	"Name": "Smart Plug Switch",
+	"Version": "0.1.0.0",
+	"Author": "Fosuri",
+	"Actions": [
+		{
+			"Name": "Toggle",
+			"UUID": "com.fosuri.smart-plug-switch.toggle",
+			"Icon": "imgs/actions/toggle/icon",
+			"Tooltip": "Switch the plug on/off. Shows the current state.",
+			"PropertyInspectorPath": "ui/plug.html",
+			"Controllers": [
+				"Keypad"
+			],
+			"SupportedInMultiActions": false,
+			"States": [
+				{
+					"Image": "imgs/actions/toggle/key",
+					"TitleAlignment": "middle"
+				}
+			]
+		},
+		{
+			"Name": "Turn On",
+			"UUID": "com.fosuri.smart-plug-switch.on",
+			"Icon": "imgs/actions/on/icon",
+			"Tooltip": "Switch the plug on.",
+			"PropertyInspectorPath": "ui/plug.html",
+			"Controllers": [
+				"Keypad"
+			],
+			"SupportedInMultiActions": false,
+			"States": [
+				{
+					"Image": "imgs/actions/on/key",
+					"TitleAlignment": "middle"
+				}
+			]
+		},
+		{
+			"Name": "Turn Off",
+			"UUID": "com.fosuri.smart-plug-switch.off",
+			"Icon": "imgs/actions/off/icon",
+			"Tooltip": "Switch the plug off.",
+			"PropertyInspectorPath": "ui/plug.html",
+			"Controllers": [
+				"Keypad"
+			],
+			"SupportedInMultiActions": false,
+			"States": [
+				{
+					"Image": "imgs/actions/off/key",
+					"TitleAlignment": "middle"
+				}
+			]
+		}
+	],
+	"Category": "Smart Plug Switch",
+	"CategoryIcon": "imgs/plugin/category-icon",
+	"CodePath": "bin/plugin.js",
+	"Description": "Turn TP-Link Tapo smart plugs on and off from Stream Deck over local network.",
+	"Icon": "imgs/plugin/marketplace",
+	"SDKVersion": 3,
+	"Software": {
+		"MinimumVersion": "7.1"
+	},
+	"OS": [
+		{
+			"Platform": "mac",
+			"MinimumVersion": "12"
+		},
+		{
+			"Platform": "windows",
+			"MinimumVersion": "10"
+		}
+	],
+	"Nodejs": {
+		"Version": "24",
+		"Debug": "enabled"
+	},
+	"UUID": "com.fosuri.smart-plug-switch"
+}

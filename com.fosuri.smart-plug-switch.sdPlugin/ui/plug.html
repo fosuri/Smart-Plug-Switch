@@ -1,0 +1,83 @@
+<!doctype html>
+<html>
+	<head lang="en">
+		<title>Smart Plug Settings</title>
+		<meta charset="utf-8" />
+		<script src="https://sdpi-components.dev/releases/v4/sdpi-components.js"></script>
+		<style>
+			h4.section { margin: 14px 0 4px 8px; font-size: 9pt; text-transform: uppercase; letter-spacing: 0.05em; color: #d0d0d0; }
+			.hint { font-size: 9pt; color: #9a9a9a; line-height: 1.35; }
+			#status { font-size: 9pt; }
+			.on { color: #3ddc84; }
+			.off { color: #b0b0b0; }
+			.err { color: #ef4444; }
+			.lock { color: #f59e0b; }
+		</style>
+	</head>
+
+	<body>
+		<!-- All settings are global: shared by every Toggle / Turn On / Turn Off key. -->
+		<h4 class="section">Plug</h4>
+		<sdpi-item label="IP address">
+			<sdpi-textfield setting="host" global placeholder="192.168.1.50"></sdpi-textfield>
+		</sdpi-item>
+		<sdpi-item label="Tapo email">
+			<sdpi-textfield setting="username" global placeholder="you@example.com"></sdpi-textfield>
+		</sdpi-item>
+		<sdpi-item label="Tapo password">
+			<sdpi-password setting="password" global></sdpi-password>
+		</sdpi-item>
+		<sdpi-item label="Status">
+			<span id="status" class="hint">Waiting for plugin…</span>
+		</sdpi-item>
+
+		<h4 class="section">Safe mode</h4>
+		<sdpi-item label="Protection">
+			<sdpi-checkbox setting="safeMode" global default="true" label="Lock after switching"></sdpi-checkbox>
+		</sdpi-item>
+		<sdpi-item label="Lock (seconds)">
+			<sdpi-textfield setting="cooldownSeconds" global pattern="[0-9]{1,4}" placeholder="10"></sdpi-textfield>
+		</sdpi-item>
+		<sdpi-item label="">
+			<span class="hint">
+				After the plug is switched on or off, every key ignores presses until the countdown ends.
+				Applies to Toggle, Turn On and Turn Off keys, and also starts if the plug is switched from the
+				Tapo app.
+			</span>
+		</sdpi-item>
+
+		<script>
+			const client = SDPIComponents.streamDeckClient;
+			const statusEl = document.getElementById("status");
+
+			client.sendToPropertyInspector.subscribe((ev) => {
+				const p = ev.payload;
+				if (!p || p.event !== "status") return;
+				let text, cls;
+				if (!p.configured) {
+					text = "Enter IP, email and password";
+					cls = "hint";
+				} else if (p.error) {
+					text = p.error;
+					cls = "err";
+				} else if (p.on === null) {
+					text = "Connecting…";
+					cls = "hint";
+				} else {
+					text = p.on ? "Connected · ON" : "Connected · OFF";
+					cls = p.on ? "on" : "off";
+				}
+				if (p.lockRemaining > 0) {
+					text += ` · locked ${p.lockRemaining}s`;
+					if (cls !== "err") cls = "lock";
+				}
+				statusEl.textContent = text;
+				statusEl.className = cls;
+			});
+
+			const ask = () => client.send("sendToPlugin", { event: "getStatus" });
+			ask();
+			setInterval(ask, 1000);
+		</script>
+	</body>
+</html>
