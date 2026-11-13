@@ -8,6 +8,7 @@ const COLORS = {
 	unknown: "#4b5563",
 	error: "#ef4444",
 	lock: "#f59e0b",
+	confirm: "#38bdf8",
 	text: "#e5e7eb",
 	dim: "#9ca3af",
 };
@@ -19,7 +20,7 @@ const CAPTION: Record<Command, string> = {
 };
 
 /** Builds the key image as an SVG data URL. */
-export function renderKey(command: Command, view: PlugView): string {
+export function renderKey(command: Command, view: PlugView, keyId: string): string {
 	const parts: string[] = [`<rect width="${SIZE}" height="${SIZE}" fill="${COLORS.bg}"/>`];
 
 	const stateText = !view.configured
@@ -41,8 +42,12 @@ export function renderKey(command: Command, view: PlugView): string {
 					? COLORS.on
 					: COLORS.off;
 
-	if (view.lockRemaining > 0) {
-		parts.push(lockRing(view.lockFraction, view.on));
+	const confirming = view.armedKey === keyId && view.lockRemaining === 0;
+	if (confirming) {
+		parts.push(ring(view.armedFraction, COLORS.confirm));
+		parts.push(text(72, 86, String(view.armedRemaining), 46, COLORS.text, 700));
+	} else if (view.lockRemaining > 0) {
+		parts.push(ring(view.lockFraction, COLORS.lock));
 		parts.push(
 			text(72, view.lockRemaining >= 100 ? 82 : 86, String(view.lockRemaining), view.lockRemaining >= 100 ? 38 : 46, COLORS.text, 700),
 		);
@@ -52,7 +57,8 @@ export function renderKey(command: Command, view: PlugView): string {
 
 	const caption = CAPTION[command];
 	if (caption) parts.push(text(72, 24, caption, 17, COLORS.dim, 600));
-	parts.push(text(72, 132, stateText, 20, stateColor, 700));
+	if (confirming) parts.push(text(72, 132, "PRESS AGAIN", 18, COLORS.confirm, 700));
+	else parts.push(text(72, 132, stateText, 20, stateColor, 700));
 
 	const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${SIZE}" height="${SIZE}" viewBox="0 0 ${SIZE} ${SIZE}">${parts.join("")}</svg>`;
 	return `data:image/svg+xml;charset=utf8,${encodeURIComponent(svg)}`;
@@ -69,18 +75,17 @@ function powerIcon(color: string, busy: boolean): string {
 	);
 }
 
-function lockRing(fraction: number, on: boolean | undefined): string {
+function ring(fraction: number, color: string): string {
 	const r = 38;
 	const cx = 72;
 	const cy = 72;
 	const circumference = 2 * Math.PI * r;
 	const dash = Math.max(0, Math.min(1, fraction)) * circumference;
-	const accent = on === undefined ? COLORS.lock : on ? COLORS.on : COLORS.off;
 	return (
 		`<circle cx="${cx}" cy="${cy}" r="${r}" stroke="#2a2e35" stroke-width="8" fill="none"/>` +
-		`<circle cx="${cx}" cy="${cy}" r="${r}" stroke="${COLORS.lock}" stroke-width="8" fill="none" stroke-linecap="round" ` +
+		`<circle cx="${cx}" cy="${cy}" r="${r}" stroke="${color}" stroke-width="8" fill="none" stroke-linecap="round" ` +
 		`stroke-dasharray="${dash.toFixed(2)} ${circumference.toFixed(2)}" transform="rotate(-90 ${cx} ${cy})"/>` +
-		`<circle cx="${cx}" cy="${cy}" r="${r - 10}" fill="${accent}" opacity="0.12"/>`
+		`<circle cx="${cx}" cy="${cy}" r="${r - 10}" fill="${color}" opacity="0.12"/>`
 	);
 }
 

@@ -12,13 +12,15 @@ export type GlobalSettings = {
 	username?: string;
 	password?: string;
 	safeMode?: boolean;
+	/** Require a second press on the same key within CONFIRM_WINDOW_MS before switching. */
+	confirmPress?: boolean;
 	/** Lock duration in seconds (text field in the PI, so it may arrive as a string). */
 	cooldownSeconds?: string | number;
 };
 
 export type Command = "toggle" | "on" | "off";
 
-export type PressResult = "switched" | "unchanged" | "locked" | "busy" | "not-configured" | "error";
+export type PressResult = "armed" | "switched" | "unchanged" | "locked" | "busy" | "not-configured" | "error";
 
 export type PlugView = {
 	/** Current plug state; undefined when not known yet. */
@@ -30,9 +32,15 @@ export type PlugView = {
 	/** Fraction of the lock still remaining, 1 → 0. */
 	lockFraction: number;
 	configured: boolean;
+	/** Id of the key waiting for its confirming press, if any. */
+	armedKey: string | undefined;
+	/** Remaining confirmation time in whole seconds (0 when nothing is armed). */
+	armedRemaining: number;
+	armedFraction: number;
 };
 
 export const DEFAULT_COOLDOWN_SECONDS = 10;
+export const CONFIRM_WINDOW_MS = 5000;
 const POLL_INTERVAL_MS = 5000;
 const MAX_COOLDOWN_SECONDS = 3600;
 
@@ -48,6 +56,7 @@ class PlugController {
 	private pollTimer: NodeJS.Timeout | undefined;
 	private tickTimer: NodeJS.Timeout | undefined;
 	private polling = false;
+	private armed: { key: string; until: number } | undefined;
 	private listeners = new Set<() => void>();
 
 	onChange(listener: () => void): void {
@@ -95,16 +104,31 @@ class PlugController {
 			error: this.error,
 			busy: this.busy,
 			lockRemaining: Math.ceil(remainingMs / 1000),
-			lockFraction: total > 0 ? remainingMs / total : 0,
+			lockFraction: total > 0 ? (Math.ceil(remainingMs / 1000) * 1000) / total : 0,
 			configured: this.isConfigured(),
+			armedKey: this.armedRemainingMs() > 0 ? this.armed?.key : undefined,
+			armedRemaining: Math.ceil(this.armedRemainingMs() / 1000),
+			armedFraction: (Math.ceil(this.armedRemainingMs() / 1000) * 1000) / CONFIRM_WINDOW_MS,
 		};
 	}
 
-	async press(command: Command): Promise<PressResult> {
+	async press(command: Command, keyId: string): Promise<PressResult> {
 		if (!this.client) return "not-configured";
 		// While the safe-mode lock is running, presses are ignored on every key.
 		if (this.lockRemainingMs() > 0) return "locked";
 		if (this.busy) return "busy";
+
+		// Confirmation: the first press only arms this key; a second press on the same key within the window acts.
+		if (this.settings.confirmPress === false) {
+			this.armed = undefined;
+		} else if (this.armed?.key === keyId && this.armedRemainingMs() > 0) {
+			this.armed = undefined;
+		} else {
+			this.armed = { key: keyId, until: Date.now() + CONFIRM_WINDOW_MS };
+			this.scheduleTick();
+			this.emit();
+			return "armed";
+		}
 
 		const client = this.client;
 		this.busy = true;
@@ -208,10 +232,14 @@ class PlugController {
 		return Math.max(0, this.lastSwitchAt + total - Date.now());
 	}
 
-	/** Re-renders keys once per second while the lock is running so the countdown updates. */
+	private armedRemainingMs(): number {
+		return this.armed ? Math.max(0, this.armed.until - Date.now()) : 0;
+	}
+
+	/** Re-renders keys once per second while a lock or confirmation countdown is running. */
 	private scheduleTick(): void {
 		if (this.tickTimer) return;
-		const remaining = this.lockRemainingMs();
+		const remaining = Math.max(this.lockRemainingMs(), this.armedRemainingMs());
 		if (remaining <= 0) return;
 		const delay = remaining % 1000 || 1000;
 		this.tickTimer = setTimeout(() => {

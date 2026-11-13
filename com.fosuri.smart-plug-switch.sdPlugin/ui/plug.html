@@ -31,6 +31,16 @@
 			<span id="status" class="hint">Waiting for plugin…</span>
 		</sdpi-item>
     <hr>
+		<sdpi-item label="Confirm">
+			<sdpi-checkbox setting="confirmPress" global default="true" label="Press twice to switch"></sdpi-checkbox>
+		</sdpi-item>
+		<sdpi-item label="">
+			<span class="hint">
+				The first press only arms the key (5 second countdown, "PRESS AGAIN"). Press the same key again
+				within 5 seconds to switch the plug; otherwise nothing happens.
+			</span>
+		</sdpi-item>
+
 		<h4 class="section">Safe mode</h4>
 		<sdpi-item label="Protection">
 			<sdpi-checkbox setting="safeMode" global default="true" label="Lock after switching"></sdpi-checkbox>

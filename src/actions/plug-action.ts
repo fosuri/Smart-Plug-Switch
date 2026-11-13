@@ -6,6 +6,7 @@ import {
 	type WillDisappearEvent,
 } from "@elgato/streamdeck";
 
+import { dropImage, queueImage } from "../image-queue";
 import { type Command, plug } from "../plug-controller";
 import { renderKey } from "../render";
 
@@ -16,34 +17,35 @@ abstract class PlugAction extends SingletonAction {
 
 	constructor() {
 		super();
-		plug.onChange(() => void this.renderAll());
+		plug.onChange(() => this.renderAll());
 	}
 
 	override async onWillAppear(ev: WillAppearEvent): Promise<void> {
 		this.lastImage.delete(ev.action.id);
 		plug.keyAppeared(ev.action.id);
-		await this.renderAll();
+		this.renderAll();
 	}
 
 	override onWillDisappear(ev: WillDisappearEvent): void {
 		this.lastImage.delete(ev.action.id);
+		dropImage(ev.action.id);
 		plug.keyDisappeared(ev.action.id);
 	}
 
 	override async onKeyDown(ev: KeyDownEvent): Promise<void> {
-		const result = await plug.press(this.command);
-		// "locked" and "busy" are silent by design: pressing during the timer does nothing.
+		const result = await plug.press(this.command, ev.action.id);
+		// "locked", "busy" and "armed" need no alert: the key itself shows the countdown.
 		if (result === "error" || result === "not-configured") await ev.action.showAlert();
 	}
 
-	private async renderAll(): Promise<void> {
+	private renderAll(): void {
 		const view = plug.view;
 		for (const a of this.actions) {
 			if (!a.isKey()) continue;
-			const image = renderKey(this.command, view);
+			const image = renderKey(this.command, view, a.id);
 			if (this.lastImage.get(a.id) === image) continue;
 			this.lastImage.set(a.id, image);
-			await a.setImage(image);
+			queueImage(a, image);
 		}
 	}
 }
