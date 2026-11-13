@@ -5,9 +5,9 @@
 		<meta charset="utf-8" />
 		<script src="https://sdpi-components.dev/releases/v4/sdpi-components.js"></script>
 		<style>
-			h4.section { margin: 14px 0 4px 8px; font-size: 9pt; text-transform: uppercase; letter-spacing: 0.05em; color: #d0d0d0; }
+			h4.section { margin: 14px 0 4px 8px; font-size: 9pt; text-transform: uppercase; letter-spacing: 0.05em; color: #d0d0d0; font-weight: bold; font-family: Tahoma }
 			.hint { font-size: 9pt; color: #9a9a9a; line-height: 1.35; }
-			#status { font-size: 9pt; }
+			#status { display: flex; align-items: center; min-height: 28px; font-size: 10pt; }
 			.on { color: #3ddc84; }
 			.off { color: #b0b0b0; }
 			.err { color: #ef4444; }
@@ -30,7 +30,7 @@
 		<sdpi-item label="Status">
 			<span id="status" class="hint">Waiting for plugin…</span>
 		</sdpi-item>
-
+    <hr>
 		<h4 class="section">Safe mode</h4>
 		<sdpi-item label="Protection">
 			<sdpi-checkbox setting="safeMode" global default="true" label="Lock after switching"></sdpi-checkbox>
